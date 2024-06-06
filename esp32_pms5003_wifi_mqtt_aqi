@@ -1,0 +1,39 @@
+#include "EspMQTTClient.h"
+#include "PMS.h"
+
+EspMQTTClient client(
+  "",	//ssid
+  "",	//wifi pswd
+  "",  // MQTT Broker server ip
+  "",   // Can be omitted if not needed
+  "",   // Can be omitted if not needed
+  "",     // Client name that uniquely identify your device
+  1883              // The MQTT port, default to 1883. this line can be omitted
+);
+
+PMS pms(Serial);
+PMS::DATA data;
+char aqdt[100];
+
+void setup()
+{
+  Serial.begin(9600);
+  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overridded with enableHTTPWebUpdater("user", "password").
+  client.enableLastWillMessage("TestClient/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
+}
+
+void onConnectionEstablished()
+{  
+}
+
+void loop()
+{
+  if (pms.read(data))
+  {  
+    sprintf(aqdt,"{\"pm2p5\":%d,\"pm1p0\":%d,\"pm10\":%d}",data.PM_AE_UG_2_5,data.PM_AE_UG_1_0,data.PM_AE_UG_10_0);
+    client.publish("AQI", aqdt);
+  }
+
+  client.loop();
+}
