@@ -10,11 +10,6 @@
   #define BUTTON_B 32
   #define BUTTON_C 14
   #define WIRE Wire
-#else // 32u4, M0, M4, nrf52840 and 328p
-  #define BUTTON_A  9
-  #define BUTTON_B  6
-  #define BUTTON_C  5
-  #define WIRE Wire
 #endif
 
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &WIRE);
@@ -33,47 +28,55 @@ PMS pms(Serial);
 PMS::DATA data;
 char aqdt[100];
 char pm25[10];
+char pm1a[10];
+char pm10[10];
 
 void setup()
 {
   Serial.begin(9600);
-  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overridded with enableHTTPWebUpdater("user", "password").
-  client.enableLastWillMessage("TestClient/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
+  //client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  //client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overridded with enableHTTPWebUpdater("user", "password").
+  //client.enableLastWillMessage("TestClient/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Address 0x3C for 128x32
   display.display();
   delay(1000);
   display.clearDisplay();
   display.display();
-  pinMode(BUTTON_A, INPUT_PULLUP);
-  pinMode(BUTTON_B, INPUT_PULLUP);
-  pinMode(BUTTON_C, INPUT_PULLUP);
+  //pinMode(BUTTON_A, INPUT_PULLUP);
+  //pinMode(BUTTON_B, INPUT_PULLUP);
+  //pinMode(BUTTON_C, INPUT_PULLUP);
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0,0);
-
 }
 
 void onConnectionEstablished()
-{  
+{ 
+  display.setCursor(0,0);
+  display.print("Connected");
+  display.display();
+  delay(1000);  
+  display.clearDisplay();
+  display.display(); 
 }
 
 void loop()
-{
-  
-  if (pms.read(data))
-  {  
-    sprintf(aqdt,"{\"pm2p5\":%d,\"pm1p0\":%d,\"pm10\":%d}",data.PM_AE_UG_2_5,data.PM_AE_UG_1_0,data.PM_AE_UG_10_0);
-    client.publish("AQI", aqdt);
-  }
-
+{   
+  pms.read(data);
+  sprintf(aqdt,"{\"pm2p5\":%d,\"pm1p0\":%d,\"pm10\":%d}",data.PM_AE_UG_2_5,data.PM_AE_UG_1_0,data.PM_AE_UG_10_0);
+  client.publish("AQI", aqdt);  
   display.setCursor(0,0);
   display.print("pm2.5:");
   sprintf(pm25,"\%d",data.PM_AE_UG_2_5);
-  display.print(pm25);  
+  display.println(pm25);  
+  display.print("pm1.0:");
+  sprintf(pm1a,"\%d",data.PM_AE_UG_1_0);
+  display.println(pm1a);  
+  display.print("pm10:");
+  sprintf(pm10,"\%d",data.PM_AE_UG_10_0);
+  display.println(pm10);  
   display.display();  
   display.clearDisplay();
   display.display();
-
   client.loop();
 }
