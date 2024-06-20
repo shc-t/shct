@@ -1,0 +1,58 @@
+#include <DHT11.h>
+#include "EspMQTTClient.h"
+#include "PMS.h"
+
+EspMQTTClient client(
+  "",
+  "",
+  "",  // MQTT Broker server ip
+  "",   // MQTT user ID
+  "",   // MQTT password
+  "esp32",     // Client name that uniquely identify your device
+  1883              // The MQTT port, default to 1883. this line can be omitted
+);
+
+DHT11 dht11(2);
+PMS pms(Serial);
+PMS::DATA data;
+char aqdt[100];
+char tmp[100];
+
+void setup()
+{
+  Serial.begin(9600); 
+}
+
+void onConnectionEstablished()
+{  
+}
+
+void loop()
+{
+  while (pms.read(data)==false)
+  {
+    delay(200);
+  }
+  sprintf(aqdt,"{\"pm2p5\":%d,\"pm1p0\":%d,\"pm10\":%d}",data.PM_AE_UG_2_5,data.PM_AE_UG_1_0,data.PM_AE_UG_10_0);
+  client.loop();
+  client.publish("AQI", aqdt);
+  Serial.println(aqdt); 
+
+  int temperature = 0;
+  int humidity = 0;
+  int result = dht11.readTemperatureHumidity(temperature, humidity);
+  while (result != 0) {
+    delay(100);
+  }
+  sprintf(tmp,"{\"tem\":%d,\"hmd\":%d}",temperature,humidity);
+  client.loop();
+  client.publish("AQI", tmp);
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print(" °C\tHumidity: ");
+  Serial.print(humidity);
+  Serial.println(" %");
+
+
+
+}
